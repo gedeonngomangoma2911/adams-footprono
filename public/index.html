@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adams footprono</title>
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#f4f7f4;color:#14231a}
+.w{max-width:720px;margin:auto;padding:20px 16px 48px}h1 span{color:#0f9d58}
+.c{background:#fff;border:1px solid #dbe5dd;border-radius:14px;padding:16px;margin-bottom:14px}
+input,button{width:100%;padding:12px;margin-top:8px;border-radius:10px;font-size:1rem;border:1px solid #dbe5dd}
+button{background:#0f9d58;color:#fff;border:0;font-weight:700}.e{color:#c0392b}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.b{background:#e8f5ee;border-radius:10px;padding:10px;text-align:center}.b b{display:block;font-size:1.3rem;color:#0f9d58}
+@media(prefers-color-scheme:dark){body{background:#0e1511;color:#e8f0ea}.c{background:#17211b;border-color:#2a3a30}input{background:#0e1511;color:#e8f0ea;border-color:#2a3a30}.b{background:#1c2e24}}
+</style></head><body><div class="w">
+<h1>Bienvenue sur Adams <span>footprono</span> ⚽</h1>
+<p>Indiquez la rencontre d’aujourd’hui que vous voulez qu’on analyse.</p>
+<div class="c"><input id="a" placeholder="Équipe à domicile"><input id="b" placeholder="Équipe à l’extérieur"><button id="go">Analyser</button></div>
+<div id="o"></div></div>
+<script>
+const o=document.getElementById("o");
+function card(t,lines){const c=document.createElement("div");c.className="c";const h=document.createElement("h3");h.textContent=t;c.appendChild(h);lines.forEach(l=>{const p=document.createElement("p");p.textContent=l;c.appendChild(p)});o.appendChild(c)}
+document.getElementById("go").onclick=async()=>{
+ const a=document.getElementById("a").value.trim(),b=document.getElementById("b").value.trim();
+ if(!a||!b){o.textContent="";card("Champs manquants",["Veuillez saisir les deux équipes."]);return}o.textContent="Analyse en cours…";
+ try{
+  const r=await(await fetch("/api/analyse?home="+encodeURIComponent(a)+"&away="+encodeURIComponent(b))).json();
+  o.textContent="";
+  if(r.erreur){card("Erreur",[r.erreur]);return}
+  if(!r.confirme){card("Match non trouvé aujourd’hui",[r.message]);return}
+  card("Match confirmé",[r.match.competition+" · "+new Date(r.match.heure).toLocaleString("fr-FR"),r.match.stade||""]);
+  r.equipes.forEach(e=>card("Analyse : "+e.nom,["5 derniers matchs : "+e.resultats.join(" | "),"Moyenne : "+e.gf.toFixed(1)+" buts marqués, "+e.ga.toFixed(1)+" encaissés"]));
+  card("Confrontations précédentes",r.h2h.length?r.h2h:["Aucune donnée"]);
+  card("Blessés / indisponibles",r.absents.length?r.absents:["Aucun signalé"]);
+  card("Arbitre",[r.arbitre.nom,r.arbitre.moyenne!=null?r.arbitre.moyenne+" cartons jaunes/match sur ses "+r.arbitre.matchs+" derniers matchs":"Statistiques de l’arbitre non disponibles"]);
+  const p=r.pronostic,c=document.createElement("div");c.className="c";c.innerHTML="<h3>Pronostic</h3>";const g=document.createElement("div");g.className="g";
+  [[p.score,"Score exact"],[p.btts+" %","Les deux marquent"],[p.cartons!=null?p.cartons:"?","Cartons jaunes / match (estimé)"]].forEach(x=>{const d=document.createElement("div");d.className="b";const s=document.createElement("b");s.textContent=x[0];d.appendChild(s);d.appendChild(document.createTextNode(x[1]));g.appendChild(d)});
+  c.appendChild(g);o.appendChild(c);
+ }catch(e){o.textContent="";card("Erreur",["Connexion au serveur impossible. Vérifiez votre connexion internet et réessayez."])}
+};
+</script></body></html>
